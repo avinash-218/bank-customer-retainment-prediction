@@ -2,12 +2,6 @@
 import numpy as np
 import matplotlib as plt
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix
-import keras
-from keras.models import Sequential   #initialisation the ANN
-from keras.layers import Dense   #build ANN
 
 #data preprocessing
 
@@ -17,9 +11,11 @@ X=dataset.iloc[:,3:13].values
 Y=dataset.iloc[:,13].values
 
 #label encode categorical variables (Geography ,gender)
-label_encoder_X = LabelEncoder()
-X[:,1]=label_encoder_X.fit_transform(X[:,1])
-X[:,2]=label_encoder_X.fit_transform(X[:,2])
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder
+label_encoder_X_1 = LabelEncoder()
+X[:,1]=label_encoder_X_1.fit_transform(X[:,1])
+label_encoder_X_2 = LabelEncoder()
+X[:,2]=label_encoder_X_2.fit_transform(X[:,2])
 
 #one hot encode label encoded categorical variable
 #since gender is 0 or 1 we can consider it as male or not i.e,0-female 1-male or vice versa
@@ -36,32 +32,40 @@ X=np.delete(X,4,1)
 X=X[:,1:]
 
 #split dataset to train and test data
+from sklearn.model_selection import train_test_split
 X_train, X_test, Y_train, Y_test = train_test_split(X,Y,test_size=0.2,random_state=0 )
 
 #feature scaling is to be done because we do not need one feature to dominate other
+from sklearn.preprocessing import StandardScaler
 f_scale=StandardScaler()
 X_train = f_scale.fit_transform(X_train)
 X_test = f_scale.transform(X_test)
 
-#initialisation the ANN
-classifier = Sequential()   #classifier is an object name of type(model)
+#tuning ANN
+from keras.wrappers.scikit_learn import KerasClassifier
+from sklearn.model_selection import GridSearchCV
+import keras
+from keras.models import Sequential   #initialisation the ANN
+from keras.layers import Dense   #build ANN
 
-#adding input and 2 hidden layers and output layer
-classifier.add(Dense(input_dim=11, units=6,activation='relu',kernel_initializer='uniform'))  #check
-classifier.add(Dense(units=6, activation='relu',kernel_initializer='uniform'))  #check
-classifier.add(Dense(units=1, activation='sigmoid',kernel_initializer='uniform'))  #check
+def build_classifier(optimizer):
+    classifier = Sequential()
+    classifier.add(Dense(input_dim=11, units=6,activation='relu',kernel_initializer='uniform'))
+    classifier.add(Dense(units=6, activation='relu',kernel_initializer='uniform'))
+    classifier.add(Dense(units=1, activation='sigmoid',kernel_initializer='uniform'))
+    classifier.compile(optimizer=optimizer,loss='binary_crossentropy', metrics=['accuracy'])
+    return classifier
+classifier = KerasClassifier(build_fn=build_classifier) #not build_classifier() (no brackets)
 
-#compile the ANN model
-classifier.compile(optimizer='adam',loss='binary_crossentropy', metrics=['accuracy'])
+parameters = {'batch_size':[10, 25, 32],
+              'epochs':[100, 500],
+              'optimizer':['adam', 'rmsprop']}
 
-#fitting
-classifier.fit(X_train,Y_train,batch_size=10,epochs=100)
+grid_search = GridSearchCV(estimator=classifier, param_grid=parameters, scoring = 'accuracy', cv= 10)
+grid_search = grid_search.fit(X_train, Y_train)
 
-#prediction and evaluation
-Y_pred=classifier.predict(X_test)
-
-#filtering with respect to threshold
-Y_pred=(Y_pred>0.5)
-
-#making confusion matrix
-cm = confusion_matrix(Y_test,Y_pred)
+best_parameters = grid_search.best_params_
+best_accuracy= grid_search.best_score_
+    
+#best parameters: batch_size=10,epochs=500,optimizer=rmsprop (0.854)
+#best parameters: batch_size=25,epochs=500,optimizer=rmsprop (0.85063)
