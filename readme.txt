@@ -6,5 +6,7 @@ This deep learning model is used to predict if a customer of a bank retains as t
 3) Feature Scaling
 4) HyperParameter Tuning
 
+Note: run hyperparameter tuning once to get the best parameters and then use the best parameters.
+
 #best parameters: batch_size=10,epochs=500,optimizer=rmsprop (accuracy=0.854)
 #best parameters: batch_size=25,epochs=500,optimizer=rmsprop (accuracy=0.85063)
