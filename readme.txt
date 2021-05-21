@@ -1,4 +1,4 @@
-This deep learning model is used to predict if a customer of a bank retains as the customer or leave base on given data sets in Chum modelling.csv.
+This deep learning model is used to predict if a customer of a bank retains as the customer or leave base on given data sets in Churn modelling.csv.
 
 
 1) Data preprocessing (categorical encoding and one hot encoding)
